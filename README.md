@@ -10,6 +10,7 @@ Developed a real-time face recognition system using OpenCV to identify individua
 - Real-time face detection via webcam
 - Face recognition — identifies registered individuals by name
 - Predicts Age, Gender and Emotion for every detected face
+- Powered by DeepFace deep learning — no manual model downloads needed
 - SQLite database stores all face encodings and detection logs
 - Full audit trail — every detection is timestamped and saved
 - Live face registration (press R while running)
@@ -25,7 +26,7 @@ Developed a real-time face recognition system using OpenCV to identify individua
 | Python | Core language |
 | OpenCV | Webcam capture, face detection, UI rendering |
 | face-recognition / dlib | 128-d face encoding and matching |
-| Caffe / ONNX Models | Age, gender, emotion prediction |
+| DeepFace | Age, gender and emotion prediction |
 | SQLite | Persistent storage for persons and logs |
 | NumPy | Numerical operations on face vectors |
 
@@ -39,10 +40,10 @@ face_recognition_system/
 ├── main.py                     # Entry point, runs the webcam loop
 ├── database.py                 # SQLite operations
 ├── face_recognition_module.py  # Face detection and recognition
-├── emotion_detection.py        # Age, gender, emotion prediction
+├── emotion_detection.py        # Age, gender, emotion via DeepFace
 ├── utils.py                    # Drawing, HUD, registration helpers
 │
-├── models/                     # Place pre-trained model files here
+├── models/                     # Model files (auto managed)
 ├── data/
 │   ├── face_recognition.db     # Auto-created SQLite database
 │   └── logs_export.csv         # Generated when you press E
@@ -80,25 +81,28 @@ CREATE TABLE logs (
 
 **Step 1 — Clone the project**
 ```bash
-git clone https://github.com/Jethin2205/face-recognition-system
+git clone https://github.com/Jethin2205/face-recognition-age-gender-emotion
 cd face_recognition_system
 ```
 
 **Step 2 — Create virtual environment**
 ```bash
 python -m venv venv
-source venv/bin/activate       # Mac / Linux
 venv\Scripts\activate          # Windows
+source venv/bin/activate       # Mac / Linux
 ```
 
 **Step 3 — Install dependencies**
 ```bash
 pip install -r requirements.txt
+pip install deepface
 ```
 
 > **Windows users:** If dlib install fails, download a pre-built wheel from
 > https://github.com/z-mahmud22/Dlib_Windows_Python3.x
 > then run: `pip install path/to/dlib-*.whl`
+
+> **Note:** TensorFlow warnings on startup are normal — ignore them.
 
 ---
 
@@ -148,6 +152,22 @@ python main.py --register-from-image photo.jpg
 
 ---
 
+## What Shows on Screen
+
+```
+┌─── John 94% ──────────────┐
+│ Age: (27)                  │
+│ Gender: Male               │
+│ Emotion: Happy 89%         │
+└────────────────────────────┘
+```
+
+- Green box — recognized person
+- Blue box — unknown face
+- All attributes shown inside the box
+
+---
+
 ## Viewing the Database
 
 Download **DB Browser for SQLite** → https://sqlitebrowser.org
@@ -158,33 +178,15 @@ You will see all registered persons and detection logs in a spreadsheet view.
 
 ---
 
-## Optional Models for Better Accuracy
-
-Place these files in the `models/` folder:
-
-| File | Purpose |
-|---|---|
-| `age_deploy.prototxt` + `age_net.caffemodel` | Age prediction |
-| `gender_deploy.prototxt` + `gender_net.caffemodel` | Gender prediction |
-| `emotion_mini_xception.onnx` | Emotion detection |
-
-Without these files the system still runs using built-in heuristic fallback.
-
-Download links:
-- Age/Gender models: https://github.com/spmallick/learnopencv/tree/master/AgeGender
-- Emotion ONNX model: https://github.com/oarriaga/face_classification
-
----
-
 ## How It Works Internally
 
-1. Webcam frame is captured by OpenCV
+1. Webcam frame captured by OpenCV
 2. Haarcascade detects face bounding boxes
 3. dlib computes a 128-number vector for each face
-4. Vector is compared against all stored encodings in SQLite
-5. Closest match below the tolerance threshold → name displayed
-6. Face crop is passed to age, gender and emotion models
-7. Detection is logged to the database with timestamp
+4. Vector compared against all stored encodings in SQLite
+5. Closest match → name displayed on screen
+6. DeepFace analyses the face crop for age, gender and emotion
+7. Detection logged to database with timestamp every 5 seconds
 
 ---
 
@@ -195,5 +197,6 @@ opencv-python>=4.8.0
 numpy>=1.24.0
 face-recognition>=1.3.0
 dlib>=19.24.0
+deepface
 Pillow>=9.0.0
 ```
